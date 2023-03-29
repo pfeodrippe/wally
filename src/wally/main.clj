@@ -1,4 +1,4 @@
-(ns walstrom.main
+(ns wally.main
   (:require
    [camel-snake-kebab.core :as csk]
    [clojure.java.io :as io]
@@ -25,7 +25,7 @@
 
 (def user-data-dir
   "Folder for the browser."
-  (io/file ".walstrom/webdriver/data"))
+  (io/file ".wally/webdriver/data"))
 
 (defonce ^:dynamic *page*
   (delay
@@ -169,7 +169,7 @@
 ;; Commands.
 (defmacro defcommand
   "Like `defn`, but adds some extra properties to the function relevant
-  to Walstrom commands."
+  to Wally commands."
   {:arglists '([name doc-string? [params*] body])}
   [name & args]
   (let [[doc-string params body] (if (string? (first args))
@@ -298,8 +298,8 @@
 
 (comment
 
-  (require '[walstrom.selectors :as ws])
-  (require '[walstrom.main :as w])
+  (require '[wally.selectors :as ws])
+  (require '[wally.main :as w])
 
   ;; Copy jsonista deps.edn dep.
   (do

@@ -1,10 +1,10 @@
-[![Clojars Project](https://img.shields.io/clojars/v/io.github.pfeodrippe/walstrom.svg)](https://clojars.org/io.github.pfeodrippe/walstrom)
+[![Clojars Project](https://img.shields.io/clojars/v/io.github.pfeodrippe/wally.svg)](https://clojars.org/io.github.pfeodrippe/wally)
 
-# Walstrom
+# Wally
 
 A Clojure [Playwright](https://playwright.dev/) wrapper.
 
-Chad Walstrom is a very nice person, so I have created this library for him,
+Wally is a very nice person I work with, so I have created this library for him,
 also because I needed a library where I could use the `w` alias, but mostly
 because I am very fond of this good man =D
 
@@ -18,11 +18,11 @@ https://user-images.githubusercontent.com/2124834/228414407-025b4014-b479-4aa3-b
 ## Usage
 
 ```clojure
-;; Here you have the main Walstrom namespace.
-(require '[walstrom.main :as w])
+;; Here you have the main Wally namespace.
+(require '[wally.main :as w])
 
 ;; Here you have some custom garden selectors.
-(require '[walstrom.selectors :as ws])
+(require '[wally.selectors :as ws])
 
 ;; Copy jsonista deps.edn dep.
 (do

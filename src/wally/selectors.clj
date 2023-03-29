@@ -1,4 +1,4 @@
-(ns walstrom.selectors
+(ns wally.selectors
   (:require
    [garden.selectors :as sel]))
 
