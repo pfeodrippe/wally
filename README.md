@@ -10,6 +10,8 @@ because I am very fond of this good man =D
 
 Very early alpha version, expect breaking changes!
 
+https://user-images.githubusercontent.com/2124834/228414407-025b4014-b479-4aa3-bdab-761a8df22791.mp4
+
 ## Usage
 
 ```clojure
