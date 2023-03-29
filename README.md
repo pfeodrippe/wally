@@ -21,8 +21,9 @@ https://user-images.githubusercontent.com/2124834/228414407-025b4014-b479-4aa3-b
 ;; Here you have the main Wally namespace.
 (require '[wally.main :as w])
 
-;; Here you have some custom garden selectors.
+;; Here you have some custom garden selectors + the usual ones.
 (require '[wally.selectors :as ws])
+(require '[garden.selectors :as s])
 
 ;; Copy jsonista deps.edn dep.
 (do
