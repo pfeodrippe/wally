@@ -1,0 +1,19 @@
+{:deps
+ {}
+
+ :tasks
+ {:init
+  (def args *command-line-args*)
+
+  clean
+  {:task (clojure "-T:build org.corfield.build/clean")}
+
+  build
+  {:depends [clean]
+   :task (clojure (format "-T:build org.corfield.build/jar :transitive true :lib io.github.pfeodrippe/walstrom :version '\"%s\"'"
+                          (first args)))}
+
+  deploy
+  {:depends [build]
+   :task (clojure (format "-T:build org.corfield.build/deploy :lib io.github.pfeodrippe/walstrom :version '\"%s\"'"
+                          (first args)))}}}
