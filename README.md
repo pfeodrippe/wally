@@ -13,8 +13,9 @@ Very early alpha version, expect breaking changes!
 
 Playwright is in the same category as the etaoin webdriver (parts of the API were heavily influenced by it), but leaning towards Cypress as there is huge support for testing, but, different from Cypress and like etaoin, PW just works in the REPL.
 
-NOTE: In this video, replace `walstrom` (old project name) with `wally` (new project name) for
+NOTE: In the video below, replace `walstrom` (old project name) with `wally` (new project name) for
 the requires.
+
 https://user-images.githubusercontent.com/2124834/228414407-025b4014-b479-4aa3-bdab-761a8df22791.mp4
 
 ## Usage
