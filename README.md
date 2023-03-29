@@ -15,7 +15,7 @@ Playwright is in the same category as the etaoin webdriver (parts of the API wer
 
 ## Example
 
-See an awesome example project made by @PEZ (thanks!), https://github.com/PEZ/wally-example.
+See an awesome example project made by https://github.com/PEZ (thanks!), https://github.com/PEZ/wally-example.
 
 ## Usage
 
