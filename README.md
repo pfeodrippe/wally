@@ -1,5 +1,14 @@
 [![Clojars Project](https://img.shields.io/clojars/v/io.github.pfeodrippe/wally.svg)](https://clojars.org/io.github.pfeodrippe/wally)
 
+### Deps
+
+`io.github.pfeodrippe/wally {:mvn/version "0.0.2"}`
+
+
+### Leiningen
+
+`[io.github.pfeodrippe/wally "0.0.2"]`
+
 # Wally
 
 A Clojure [Playwright](https://playwright.dev/) wrapper.
