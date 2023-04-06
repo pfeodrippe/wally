@@ -2,12 +2,12 @@
 
 ### Deps
 
-`io.github.pfeodrippe/wally {:mvn/version "0.0.2"}`
+`io.github.pfeodrippe/wally {:mvn/version "0.0.3"}`
 
 
 ### Leiningen
 
-`[io.github.pfeodrippe/wally "0.0.2"]`
+`[io.github.pfeodrippe/wally "0.0.3"]`
 
 # Wally
 
@@ -19,12 +19,14 @@ because I am very fond of this good man =D
 
 Very early alpha version, expect breaking changes!
 
-
 Playwright is in the same category as the etaoin webdriver (parts of the API were heavily influenced by it), but leaning towards Cypress as there is huge support for testing, but, different from Cypress and like etaoin, PW just works in the REPL.
 
-## Example
+## Examples
 
 See an awesome example project made by https://github.com/PEZ (thanks!), https://github.com/PEZ/wally-example.
+
+There is also https://github.com/pfeodrippe/wally-tests so we can test websites
+we love.
 
 ## Usage
 
