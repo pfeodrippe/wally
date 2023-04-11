@@ -2,12 +2,12 @@
 
 ### Deps
 
-`io.github.pfeodrippe/wally {:mvn/version "0.0.3"}`
+`io.github.pfeodrippe/wally {:mvn/version "0.0.4"}`
 
 
 ### Leiningen
 
-`[io.github.pfeodrippe/wally "0.0.3"]`
+`[io.github.pfeodrippe/wally "0.0.4"]`
 
 # Wally
 

@@ -157,8 +157,9 @@
       (SeqableLocator. locator))))
 
 (defn -query
-  "Like `query`, but returns a locator instead of a `SeqableLocator`,
-  it's usually used inside the default `defcommands`."
+  "Like `query`, but returns a locator instead of a `SeqableLocator`.
+  You can use it when you want to interact directly with a Playwright locator,
+  check https://playwright.dev/java/docs/api/class-locator."
   [q]
   (let [q (query q)]
     (if (instance? SeqableLocator q)
@@ -284,9 +285,24 @@
   [locator]
   (.count locator))
 
-(defn text-contents
-  [locator]
-  (.allTextContents locator))
+(defn all-text-contents
+  "Find all text contents for a query. It returns a vector as a query
+  may contain multiple matches."
+  [q]
+  (.allTextContents (-query q)))
+
+(defn text-content
+  "Find one text content for a query. It's like `all-text-contents`, but
+  it returns only one match and throws an exceptions if there is more than
+  one element matching.
+
+  It returns `nil` if no match is found."
+  [q]
+  (let [contents (all-text-contents q)]
+    (if (> (count contents) 1)
+      (throw (ex-info (str `text-content " - Query matches more than 1 element.")
+                      {:q q}))
+      (first contents))))
 
 (defn visible?
   [q]
