@@ -28,7 +28,7 @@ See an awesome example project made by https://github.com/PEZ (thanks!), https:/
 There is also https://github.com/pfeodrippe/wally-tests so we can test websites
 we love.
 
-See how to PBT a webpage using Recife, https://recife.pfeodrippe.com/notebooks/recife/notebook/webdriver.html.
+See how to PBT a webpage using Recife and Wally, https://recife.pfeodrippe.com/notebooks/recife/notebook/webdriver.html.
 
 ## Usage
 
