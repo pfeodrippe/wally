@@ -249,7 +249,7 @@
   `timeout` is in milliseconds, defaults to the page timeout.
 
   See https://playwright.dev/java/docs/api/class-page#page-wait-for-selector for more
-  context. "
+  context."
   ([q]
    (wait-for q {}))
   ([q {:keys [state timeout]}]
