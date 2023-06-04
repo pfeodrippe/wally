@@ -1,0 +1,13 @@
+{:lint-as {garden.selectors/defpseudoclass clojure.core/defn
+           garden.selectors/defselector clj-kondo.lint-as/def-catch-all
+           wally.main/defcommand clojure.core/defn}
+ :config-in-comment {:linters {:duplicate-require {:level :off}}}
+ :linters {:unresolved-var                        {:exclude [garden.selectors/a]}
+           ;; Enable some disabled-by-default linters:
+           :docstring-leading-trailing-whitespace {:level :warning}
+           :keyword-binding                       {:level :warning}
+           :reduce-without-init                   {:level :warning}
+           :redundant-fn-wrapper                  {:level :warning}
+           :single-key-in                         {:level :warning}
+           :unsorted-required-namespaces          {:level :warning}
+           :used-underscored-binding              {:level :warning}}}

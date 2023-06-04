@@ -8,11 +8,14 @@
    [jsonista.core :as json]
    [wally.selectors :as ws])
   (:import
-   (com.microsoft.playwright Playwright BrowserType$LaunchPersistentContextOptions
-                             Page$WaitForSelectorOptions Locator$WaitForOptions)
+   (com.microsoft.playwright BrowserType$LaunchPersistentContextOptions
+                             Download Locator$WaitForOptions
+                             Page Page$WaitForSelectorOptions
+                             Playwright Response)
    (com.microsoft.playwright.impl LocatorImpl)
    (com.microsoft.playwright.options WaitForSelectorState SelectOption)
    (garden.selectors CSSSelector)
+   (java.io File)
    (java.nio.file Paths)
    (com.microsoft.playwright.assertions PlaywrightAssertions)))
 
@@ -25,39 +28,42 @@
     (json/read-value s object-mapper)
     (catch Exception _ s)))
 
-(def user-data-dir
+(def ^File user-data-dir
   "Folder for the browser."
   (io/file ".wally/webdriver/data"))
 
 (defn make-page
-  ([]
+  (^Page
+   []
    (make-page {}))
-  ([{:keys [headless]
+  (^Page
+   [{:keys [headless]
      :or {headless false}}]
    (delay
      (let [pw (Playwright/create)]
        (io/make-parents user-data-dir)
-       (doto (-> (.. pw chromium (launchPersistentContext
-                                  ;; We start chromium with persistent data
-                                  ;; so we can login to Google (e.g. for QA develop
-                                  ;; admin) only once during days.
-                                  (Paths/get (java.net.URI.
-                                              (str "file://"
-                                                   (.getAbsolutePath user-data-dir))))
-                                  (-> (BrowserType$LaunchPersistentContextOptions.)
-                                      (.setHeadless headless)
-                                      (.setSlowMo 50))))
-                 .pages
-                 first)
-         (.setDefaultTimeout 10000))))))
+       (-> (.. pw chromium (launchPersistentContext
+                            ;; We start chromium with persistent data
+                            ;; so we can login to Google (e.g. for QA develop
+                            ;; admin) only once during days.
+                            (Paths/get (java.net.URI.
+                                        (str "file://"
+                                             (.getAbsolutePath user-data-dir))))
+                            (-> (BrowserType$LaunchPersistentContextOptions.)
+                                (.setHeadless headless)
+                                (.setSlowMo 50))))
+           .pages
+           ^Page (first)
+           (doto (.setDefaultTimeout 10000)))))))
 
-(defonce ^:dynamic *page*
+(defonce ^:dynamic ^Page *page*
   (make-page))
 
 (def ^:dynamic *opts*
   {::opt.command-delay 0})
 
 (defn get-page
+  ^Page
   []
   (if (delay? *page*)
     @*page*
@@ -80,7 +86,7 @@
 ;; so we can iterate over a query.
 ;; E.g. (run! w/click (take 3 (SeqableLocator. locator))) would
 ;; make Playwright click on the first 3 elements (if existent).
-(deftype SeqableLocator [locator]
+(deftype SeqableLocator [^com.microsoft.playwright.Locator locator]
   clojure.lang.ISeq
   (seq [_this]
     ;; Wait for one element or throw an exception otherwise.
@@ -148,6 +154,7 @@
   (.. (get-page) goBack))
 
 (defn query
+  ^SeqableLocator
   [q]
   (if (instance? SeqableLocator q)
     q
@@ -160,6 +167,7 @@
   "Like `query`, but returns a locator instead of a `SeqableLocator`.
   You can use it when you want to interact directly with a Playwright locator,
   check https://playwright.dev/java/docs/api/class-locator."
+  ^com.microsoft.playwright.Locator
   [q]
   (let [q (query q)]
     (if (instance? SeqableLocator q)
@@ -169,7 +177,7 @@
 (defn find-one-by-text
   [q text]
   (->> (query q)
-       (filter #(= (.allTextContents %) [text]))
+       (filter #(= (.allTextContents ^com.microsoft.playwright.Locator %) [text]))
        first))
 
 (defn navigate
@@ -183,8 +191,8 @@
   {:arglists '([name doc-string? [params*] body])}
   [name & args]
   (let [[doc-string params body] (if (string? (first args))
-                                     [(first args) (second args) (rest args)]
-                                     [nil (first args) (rest args)])]
+                                   [(first args) (second args) (rest (rest args))]
+                                   [nil (first args) (rest args)])]
     `(defn ~name
        ~(or doc-string {})
        ~params
@@ -209,12 +217,17 @@
   - {:index n}
   - {:label \"...\"}"
   [q option]
-  (.. (-query q) (selectOption (cond
-                                 (string? option) option
-                                 (:index option) (doto (SelectOption.)
-                                                   (.setIndex (:index option)))
-                                 (:label option) (doto (SelectOption.)
-                                                   (.setIndex (:label option)))))))
+  (let [^String option (when (string? option)
+                         option)
+        ^SelectOption select-option (when-not option
+                                      (cond
+                                        (:index option) (doto (SelectOption.)
+                                                          (.setIndex (:index option)))
+                                        (:label option) (doto (SelectOption.)
+                                                          (.setIndex (:label option)))))]
+    (if option
+      (.. (-query q) (selectOption option))
+      (.. (-query q) (selectOption select-option)))))
 
 ;; Helper functions.
 (defn fill-many
@@ -234,8 +247,8 @@
   (let [[suggested-filename
          path]
         (-> (.waitForDownload (get-page) #(click q))
-            ((juxt #(.suggestedFilename %)
-                   #(.path %))))]
+            ((juxt #(.suggestedFilename ^Download %)
+                   #(.path ^Download %))))]
     {:suggested-filename suggested-filename
      :path (str path)}))
 
@@ -249,7 +262,7 @@
   `timeout` is in milliseconds, defaults to the page timeout.
 
   See https://playwright.dev/java/docs/api/class-page#page-wait-for-selector for more
-  context. "
+  context."
   ([q]
    (wait-for q {}))
   ([q {:keys [state timeout]}]
@@ -273,16 +286,17 @@
      (get-page)
      (reify java.util.function.Predicate
        (test [_ response]
-         (when (re-matches match (.url response))
-           (deliver *p
-                    {:status (.status response)
-                     :body (parse-json-string (slurp (.body response)))})
-           true)))
+         (let [^Response response response]
+           (when (re-matches match (.url response))
+             (deliver *p
+                      {:status (.status response)
+                       :body (parse-json-string (slurp (.body response)))})
+             true))))
      (fn []))
     @*p))
 
 (defn count*
-  [locator]
+  [^com.microsoft.playwright.Locator locator]
   (.count locator))
 
 (defn all-text-contents
