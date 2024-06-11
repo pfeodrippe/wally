@@ -339,13 +339,13 @@
   (.url (get-page)))
 
 (defn keyboard-press
-  "Press keyboard.
+  "Press keyboard. If multiple args passed, keys pressed is succession.
 
   See https://playwright.dev/docs/api/class-keyboard.
 
   E.g. `(keyboard-press \"Enter\")`"
-  [key]
-  (.. (get-page) keyboard (press key)))
+  [& keys]
+  (run! (fn [key] (.. (get-page) keyboard (press key))) keys))
 
 (comment
 
