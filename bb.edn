@@ -5,6 +5,9 @@
  {:init
   (def args *command-line-args*)
 
+  test
+  {:task (clojure "-M:test")}
+
   clean
   {:task (clojure "-T:build org.corfield.build/clean")}
 
