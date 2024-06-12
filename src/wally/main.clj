@@ -133,6 +133,13 @@
     (instance? CSSSelector q)
     (s/css-selector q)
 
+    (and (sequential? q)
+         (sequential? (first q))
+         (= (count q) 1))
+    ;; Nested vector/list represents a logical conjunction (and).
+    (->> (map query->selector (first q))
+         (str/join))
+
     (sequential? q)
     ;; Chain comands if query is a list or a vector.
     (->> (mapv query->selector q)
