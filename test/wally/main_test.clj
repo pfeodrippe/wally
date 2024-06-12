@@ -6,6 +6,7 @@
 (deftest query->selector
   (are [q expected] (= expected (w/query->selector q))
     (s/attr "href") "[href]"
+    :html "html"
     :#foo "#foo"
     :.bar ".bar"
     "baz" "baz"
