@@ -144,7 +144,7 @@
     (name q)
 
     (keyword? q)
-    (str "." (name q))
+    (name q)
 
     :else
     q))
