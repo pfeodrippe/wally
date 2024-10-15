@@ -133,6 +133,13 @@
     (instance? CSSSelector q)
     (s/css-selector q)
 
+    (and (sequential? q)
+         (sequential? (first q))
+         (= (count q) 1))
+    ;; Nested vector/list represents a logical conjunction (and).
+    (->> (map query->selector (first q))
+         (str/join))
+
     (sequential? q)
     ;; Chain comands if query is a list or a vector.
     (->> (mapv query->selector q)
@@ -144,7 +151,7 @@
     (name q)
 
     (keyword? q)
-    (str "." (name q))
+    (name q)
 
     :else
     q))
@@ -339,13 +346,13 @@
   (.url (get-page)))
 
 (defn keyboard-press
-  "Press keyboard.
+  "Press keyboard. If multiple args passed, keys pressed in succession.
 
   See https://playwright.dev/docs/api/class-keyboard.
 
   E.g. `(keyboard-press \"Enter\")`"
-  [key]
-  (.. (get-page) keyboard (press key)))
+  [& keys]
+  (run! (fn [key] (.. (get-page) keyboard (press key))) keys))
 
 (comment
 
