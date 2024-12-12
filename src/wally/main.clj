@@ -8,6 +8,7 @@
    [jsonista.core :as json]
    [wally.selectors :as ws])
   (:import
+   (clojure.lang IFn)
    (com.microsoft.playwright BrowserType$LaunchPersistentContextOptions
                              Download Locator$WaitForOptions
                              Page Page$WaitForSelectorOptions
@@ -17,6 +18,7 @@
    (garden.selectors CSSSelector)
    (java.io File)
    (java.nio.file Paths)
+   (java.util.function Predicate)
    (com.microsoft.playwright.assertions PlaywrightAssertions)))
 
 (def ^:private object-mapper
@@ -283,24 +285,25 @@
       timeout (.setTimeout timeout)))))
 
 (defn wait-for-response
-  "Returns response."
-  [match]
-  ;; `Page.waitForResponse` receives a predicate and a runnable,
-  ;; we ignore the runnable and call the handler from the predicate
-  ;; itself.
-  (let [*p (promise)]
-    (.waitForResponse
-     (get-page)
-     (reify java.util.function.Predicate
-       (test [_ response]
-         (let [^Response response response]
-           (when (re-matches match (.url response))
-             (deliver *p
-                      {:status (.status response)
-                       :body (parse-json-string (slurp (.body response)))})
-             true))))
-     (fn []))
-    @*p))
+  "Blocks and returns the response matching `url-pattern`. `triggering-action` is a function performing
+  the action triggering the request. This action argument is useful in avoiding race conditions, because
+  Playwright Java is single-threaded and not thread-safe."
+  ([url-pattern] (wait-for-response (fn []) url-pattern))
+  ([^IFn triggering-action url-pattern]
+   (let [*p (promise)]
+     (.waitForResponse
+      (get-page)
+      (reify Predicate
+        (test [_ response]
+          (let [^Response response response]
+            (boolean
+             (when (re-matches url-pattern (.url response))
+               (deliver *p
+                        {:status (.status response)
+                         :body (parse-json-string (slurp (.body response)))})
+               true)))))
+      triggering-action)
+     @*p)))
 
 (defn count*
   [^com.microsoft.playwright.Locator locator]
