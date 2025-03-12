@@ -11,9 +11,9 @@
    (clojure.lang IFn)
    (com.microsoft.playwright BrowserType BrowserType$LaunchOptions
                              BrowserType$LaunchPersistentContextOptions
-                             Download Locator$WaitForOptions
-                             Page Page$RouteOptions Page$WaitForSelectorOptions
-                             Playwright Response Route)
+                             Download Locator$ClickOptions Locator$DblclickOptions
+                             Locator$WaitForOptions Page Page$RouteOptions
+                             Page$WaitForSelectorOptions Playwright Response Route)
    (com.microsoft.playwright.impl LocatorImpl)
    (com.microsoft.playwright.options WaitForSelectorState SelectOption)
    (garden.selectors CSSSelector)
@@ -255,8 +255,12 @@
              (Thread/sleep (::opt.command-delay *opts*))))))))
 
 (defcommand click
-  [q]
-  (.. (-query q) click))
+  [q & [^Locator$ClickOptions opts]]
+  (.. (-query q) (click opts)))
+
+(defcommand dblclick
+  [q & [^Locator$DblclickOptions opts]]
+  (.. (-query q) (dblclick opts)))
 
 (defcommand fill
   [q value]
