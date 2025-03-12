@@ -14,4 +14,6 @@
     [:#foo :.bar "baz"] "#foo >> .bar >> baz"
     (list "x" "y") "x >> y"
     [[:.foo (ws/text "bar")]] ".foo:text(\"bar\")"
-    (list (list :.x :.y)) ".x.y"))
+    (list (list :.x :.y)) ".x.y"
+    #wally/testid :foo "[data-testid=\"foo\"]"
+    #wally/testid "bar" "[data-testid=\"bar\"]"))

@@ -170,11 +170,16 @@
   [o]
   (pr (str o)))
 
+(defrecord TestId [testid])
+
 (defn query->selector
   [q]
   (cond
     (instance? CSSSelector q)
     (s/css-selector q)
+
+    (instance? TestId q)
+    (query->selector (s/attr= :data-testid (query->selector (.testid q))))
 
     (and (sequential? q)
          (sequential? (first q))
