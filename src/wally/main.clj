@@ -9,7 +9,8 @@
    [wally.selectors :as ws])
   (:import
    (clojure.lang IFn)
-   (com.microsoft.playwright BrowserType$LaunchPersistentContextOptions
+   (com.microsoft.playwright BrowserType BrowserType$LaunchOptions
+                             BrowserType$LaunchPersistentContextOptions
                              Download Locator$WaitForOptions
                              Page Page$WaitForSelectorOptions
                              Playwright Response)
@@ -34,29 +35,47 @@
   "Folder for the browser."
   (io/file ".wally/webdriver/data"))
 
+(defn- launch-persistent
+  ^Page [^BrowserType browser-type headless]
+  (io/make-parents user-data-dir)
+  (-> browser-type
+      (.launchPersistentContext
+       ;; We start chromium with persistent data
+       ;; so we can login to Google (e.g. for QA develop
+       ;; admin) only once during days.
+       (Paths/get (java.net.URI.
+                   (str "file://"
+                        (.getAbsolutePath user-data-dir))))
+       (-> (BrowserType$LaunchPersistentContextOptions.)
+           (.setHeadless headless)
+           (.setSlowMo 50)))
+      .pages
+      (first)))
+
+(defn- launch-non-persistent
+  ^Page [^BrowserType browser-type headless]
+  (-> browser-type
+      (.launch
+       (-> (BrowserType$LaunchOptions.)
+           (.setHeadless headless)
+           (.setSlowMo 50)))
+      .newPage))
+
 (defn make-page
   (^Page
    []
    (make-page {}))
   (^Page
-   [{:keys [headless]
-     :or {headless false}}]
+   [{:keys [headless persistent]
+     :or {headless false
+          persistent true}}]
    (delay
-     (let [pw (Playwright/create)]
-       (io/make-parents user-data-dir)
-       (-> (.. pw chromium (launchPersistentContext
-                            ;; We start chromium with persistent data
-                            ;; so we can login to Google (e.g. for QA develop
-                            ;; admin) only once during days.
-                            (Paths/get (java.net.URI.
-                                        (str "file://"
-                                             (.getAbsolutePath user-data-dir))))
-                            (-> (BrowserType$LaunchPersistentContextOptions.)
-                                (.setHeadless headless)
-                                (.setSlowMo 50))))
-           .pages
-           ^Page (first)
-           (doto (.setDefaultTimeout 10000)))))))
+     (let [pw (Playwright/create)
+           page ((if persistent launch-persistent launch-non-persistent)
+                 (.chromium pw)
+                 headless)]
+       (doto page
+         (.setDefaultTimeout 10000))))))
 
 (defonce ^:dynamic ^Page *page*
   (make-page))
