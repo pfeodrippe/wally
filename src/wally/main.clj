@@ -12,8 +12,8 @@
    (com.microsoft.playwright BrowserType BrowserType$LaunchOptions
                              BrowserType$LaunchPersistentContextOptions
                              Download Locator$WaitForOptions
-                             Page Page$WaitForSelectorOptions
-                             Playwright Response)
+                             Page Page$RouteOptions Page$WaitForSelectorOptions
+                             Playwright Response Route)
    (com.microsoft.playwright.impl LocatorImpl)
    (com.microsoft.playwright.options WaitForSelectorState SelectOption)
    (garden.selectors CSSSelector)
@@ -345,6 +345,27 @@
                true)))))
       triggering-action)
      @*p)))
+
+(defmacro with-slow-network
+  "Simulate slow network by delaying sending network request(s)
+  matching the `url`. The `url` can be a string or a regex.
+  In addition, wait for a matching request to be sent at least
+  once, making sure that the simulation setup works."
+  [{:keys [url delay request-count] :or {delay 100 request-count 1}} & body]
+  `(.waitForRequest
+    (get-page)
+    ~url
+    (fn trigger-slow-network-request# []
+      ;; Setup a delay.
+      (.route
+       (get-page)
+       ~url
+       (fn [^Route route#]
+         (Thread/sleep ~delay)
+         (.resume route#))
+       (doto (Page$RouteOptions.) (.setTimes ~request-count)))
+      ;; Trigger the request(s).
+      ~@body)))
 
 (defn count*
   [^com.microsoft.playwright.Locator locator]
