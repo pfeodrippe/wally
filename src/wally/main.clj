@@ -424,6 +424,11 @@
   [& keys]
   (run! (fn [key] (.. (get-page) keyboard (press key))) keys))
 
+(defn get-by-label
+  "Locate a form control by associated label's text."
+  [label]
+  (.getByLabel (get-page) label))
+
 (comment
 
   (require '[wally.selectors :as ws])
