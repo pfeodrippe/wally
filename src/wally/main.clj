@@ -61,6 +61,8 @@
            (.setSlowMo 50)))
       .newPage))
 
+(defonce ^:private page->playwright (atom {}))
+
 (defn make-page
   (^Page
    []
@@ -75,7 +77,9 @@
                  (.chromium pw)
                  headless)]
        (doto page
-         (.setDefaultTimeout 10000))))))
+         (.setDefaultTimeout 10000)
+         (#(swap! page->playwright assoc % pw))
+         (.onClose #(swap! page->playwright dissoc %)))))))
 
 (defonce ^:dynamic ^Page *page*
   (make-page))
@@ -94,6 +98,24 @@
   [page & body]
   `(binding [*page* ~page]
      ~@body))
+
+(defmacro with-page-open
+  [page & body]
+  `(with-page ~page
+     (try
+       ~@body
+       (finally
+         (let [page# (get-page)
+               context# (.context page#)
+               playwright# (get @#'page->playwright page#)]
+           ;; If this is the last page, then instead of closing just
+           ;; the page, close the entire browser, to not leave
+           ;; abandoned browser processes after test runs.
+           ;; Also, close the Playwright process itself.
+           (if (= [page#] (.pages context#))
+             (do (-> context# .browser .close)
+                 (some-> ^Playwright playwright# .close))
+             (.close page#)))))))
 
 (defmacro with-opts
   [opts & body]
