@@ -9,10 +9,11 @@
    [wally.selectors :as ws])
   (:import
    (clojure.lang IFn)
-   (com.microsoft.playwright BrowserType$LaunchPersistentContextOptions
-                             Download Locator$WaitForOptions
-                             Page Page$WaitForSelectorOptions
-                             Playwright Response)
+   (com.microsoft.playwright BrowserType BrowserType$LaunchOptions
+                             BrowserType$LaunchPersistentContextOptions
+                             Download Locator$ClickOptions Locator$DblclickOptions
+                             Locator$WaitForOptions Page Page$RouteOptions
+                             Page$WaitForSelectorOptions Playwright Response Route)
    (com.microsoft.playwright.impl LocatorImpl)
    (com.microsoft.playwright.options WaitForSelectorState SelectOption)
    (garden.selectors CSSSelector)
@@ -34,29 +35,51 @@
   "Folder for the browser."
   (io/file ".wally/webdriver/data"))
 
+(defn- launch-persistent
+  ^Page [^BrowserType browser-type headless]
+  (io/make-parents user-data-dir)
+  (-> browser-type
+      (.launchPersistentContext
+       ;; We start chromium with persistent data
+       ;; so we can login to Google (e.g. for QA develop
+       ;; admin) only once during days.
+       (Paths/get (java.net.URI.
+                   (str "file://"
+                        (.getAbsolutePath user-data-dir))))
+       (-> (BrowserType$LaunchPersistentContextOptions.)
+           (.setHeadless headless)
+           (.setSlowMo 50)))
+      .pages
+      (first)))
+
+(defn- launch-non-persistent
+  ^Page [^BrowserType browser-type headless]
+  (-> browser-type
+      (.launch
+       (-> (BrowserType$LaunchOptions.)
+           (.setHeadless headless)
+           (.setSlowMo 50)))
+      .newPage))
+
+(defonce ^:private page->playwright (atom {}))
+
 (defn make-page
   (^Page
    []
    (make-page {}))
   (^Page
-   [{:keys [headless]
-     :or {headless false}}]
+   [{:keys [headless persistent]
+     :or {headless false
+          persistent true}}]
    (delay
-     (let [pw (Playwright/create)]
-       (io/make-parents user-data-dir)
-       (-> (.. pw chromium (launchPersistentContext
-                            ;; We start chromium with persistent data
-                            ;; so we can login to Google (e.g. for QA develop
-                            ;; admin) only once during days.
-                            (Paths/get (java.net.URI.
-                                        (str "file://"
-                                             (.getAbsolutePath user-data-dir))))
-                            (-> (BrowserType$LaunchPersistentContextOptions.)
-                                (.setHeadless headless)
-                                (.setSlowMo 50))))
-           .pages
-           ^Page (first)
-           (doto (.setDefaultTimeout 10000)))))))
+     (let [pw (Playwright/create)
+           page ((if persistent launch-persistent launch-non-persistent)
+                 (.chromium pw)
+                 headless)]
+       (doto page
+         (.setDefaultTimeout 10000)
+         (#(swap! page->playwright assoc % pw))
+         (.onClose #(swap! page->playwright dissoc %)))))))
 
 (defonce ^:dynamic ^Page *page*
   (make-page))
@@ -75,6 +98,24 @@
   [page & body]
   `(binding [*page* ~page]
      ~@body))
+
+(defmacro with-page-open
+  [page & body]
+  `(with-page ~page
+     (try
+       ~@body
+       (finally
+         (let [page# (get-page)
+               context# (.context page#)
+               playwright# (get @#'page->playwright page#)]
+           ;; If this is the last page, then instead of closing just
+           ;; the page, close the entire browser, to not leave
+           ;; abandoned browser processes after test runs.
+           ;; Also, close the Playwright process itself.
+           (if (= [page#] (.pages context#))
+             (do (-> context# .browser .close)
+                 (some-> ^Playwright playwright# .close))
+             (.close page#)))))))
 
 (defmacro with-opts
   [opts & body]
@@ -129,11 +170,16 @@
   [o]
   (pr (str o)))
 
+(defrecord TestId [testid])
+
 (defn query->selector
   [q]
   (cond
     (instance? CSSSelector q)
     (s/css-selector q)
+
+    (instance? TestId q)
+    (query->selector (s/attr= :data-testid (query->selector (.testid q))))
 
     (and (sequential? q)
          (sequential? (first q))
@@ -148,12 +194,8 @@
          (interpose ">>")
          (str/join " "))
 
-    (or (str/starts-with? (name q) "#")
-        (str/starts-with? (name q) "."))
-    (name q)
-
     (keyword? q)
-    (name q)
+    (str (symbol q))
 
     :else
     q))
@@ -213,8 +255,12 @@
              (Thread/sleep (::opt.command-delay *opts*))))))))
 
 (defcommand click
-  [q]
-  (.. (-query q) click))
+  [q & [^Locator$ClickOptions opts]]
+  (.. (-query q) (click opts)))
+
+(defcommand dblclick
+  [q & [^Locator$DblclickOptions opts]]
+  (.. (-query q) (dblclick opts)))
 
 (defcommand fill
   [q value]
@@ -305,6 +351,27 @@
       triggering-action)
      @*p)))
 
+(defmacro with-slow-network
+  "Simulate slow network by delaying sending network request(s)
+  matching the `url`. The `url` can be a string or a regex.
+  In addition, wait for a matching request to be sent at least
+  once, making sure that the simulation setup works."
+  [{:keys [url delay request-count] :or {delay 100 request-count 1}} & body]
+  `(.waitForRequest
+    (get-page)
+    ~url
+    (fn trigger-slow-network-request# []
+      ;; Setup a delay.
+      (.route
+       (get-page)
+       ~url
+       (fn [^Route route#]
+         (Thread/sleep ~delay)
+         (.resume route#))
+       (doto (Page$RouteOptions.) (.setTimes ~request-count)))
+      ;; Trigger the request(s).
+      ~@body)))
+
 (defn count*
   [^com.microsoft.playwright.Locator locator]
   (.count locator))
@@ -356,6 +423,11 @@
   E.g. `(keyboard-press \"Enter\")`"
   [& keys]
   (run! (fn [key] (.. (get-page) keyboard (press key))) keys))
+
+(defn get-by-label
+  "Locate a form control by associated label's text."
+  [label]
+  (.getByLabel (get-page) label))
 
 (comment
 
