@@ -194,12 +194,8 @@
          (interpose ">>")
          (str/join " "))
 
-    (or (str/starts-with? (name q) "#")
-        (str/starts-with? (name q) "."))
-    (name q)
-
     (keyword? q)
-    (name q)
+    (str (symbol q))
 
     :else
     q))
