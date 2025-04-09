@@ -490,6 +490,13 @@
   ([^String js arg]
    (.evaluate (get-page) js arg)))
 
+(defn grant-permissions
+  [& permissions]
+  "Grants specified permissions (keywords or strings) to the browser context.
+
+  See: https://playwright.dev/java/docs/api/class-browsercontext#browser-context-grant-permissions"
+  (.grantPermissions (.context (get-page)) (map name permissions)))
+
 (comment
 
   (require '[wally.selectors :as ws])
