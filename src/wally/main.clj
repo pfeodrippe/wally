@@ -497,6 +497,12 @@
   See: https://playwright.dev/java/docs/api/class-browsercontext#browser-context-grant-permissions"
   (.grantPermissions (.context (get-page)) (map name permissions)))
 
+(defn clipboard-text
+  "Returns clipboard contents."
+  []
+  (grant-permissions :clipboard-read)
+  (eval-js "() => navigator.clipboard.readText()"))
+
 (comment
 
   (require '[wally.selectors :as ws])
