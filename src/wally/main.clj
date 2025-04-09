@@ -362,6 +362,15 @@
       triggering-action)
      @*p)))
 
+(defn wait-for-url
+  "Waits for the main frame to navigate to the given `url`
+  (a string, a regex or a fn).
+
+  On success, returns `true`. Otherwise, throws an error."
+  [url]
+  (.waitForURL (get-page) url)
+  true)
+
 (defmacro with-slow-network
   "Simulate slow network by delaying sending network request(s)
   matching the `url`. The `url` can be a string or a regex.
