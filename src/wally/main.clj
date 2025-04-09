@@ -313,6 +313,11 @@
   (.. (-query q)
       (setInputFiles (Paths/get (java.net.URI. (str "file://" file-path))))))
 
+(defn attr
+  "Returns an attribute value."
+  [q attr-name]
+  (.getAttribute (-query q) (name attr-name)))
+
 (defn wait-for
   "`state` may be :hidden, :visible, :attached or :detached, defaults to `:visible`.
   `timeout` is in milliseconds, defaults to the page timeout.
