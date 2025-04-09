@@ -481,6 +481,15 @@
      ~@body
      (catch TimeoutError _#)))
 
+(defn eval-js
+  "Runs a JavaScript function in the context of the web page.
+  An optional `arg` (e.g. a primitive, vector, map) can be passed to the function.
+
+  See: https://playwright.dev/java/docs/evaluating"
+  ([^String js] (eval-js js nil))
+  ([^String js arg]
+   (.evaluate (get-page) js arg)))
+
 (comment
 
   (require '[wally.selectors :as ws])
