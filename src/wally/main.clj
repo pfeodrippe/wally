@@ -13,7 +13,8 @@
                              BrowserType$LaunchPersistentContextOptions
                              Download Locator$ClickOptions Locator$DblclickOptions
                              Locator$WaitForOptions Page Page$RouteOptions
-                             Page$WaitForSelectorOptions Playwright Response Route)
+                             Page$WaitForSelectorOptions Playwright Response Route
+                             TimeoutError)
    (com.microsoft.playwright.impl LocatorImpl)
    (com.microsoft.playwright.options WaitForSelectorState SelectOption)
    (garden.selectors CSSSelector)
@@ -428,6 +429,13 @@
   "Locate a form control by associated label's text."
   [label]
   (.getByLabel (get-page) label))
+
+(defmacro maybe
+  "Returns `nil` in case that Playwright times out when waiting."
+  [& body]
+  `(try
+     ~@body
+     (catch TimeoutError _#)))
 
 (comment
 
