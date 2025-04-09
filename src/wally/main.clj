@@ -15,7 +15,6 @@
                              Locator$WaitForOptions Page Page$RouteOptions
                              Page$WaitForSelectorOptions Playwright Response Route
                              TimeoutError)
-   (com.microsoft.playwright.impl LocatorImpl)
    (com.microsoft.playwright.options WaitForSelectorState SelectOption)
    (garden.selectors CSSSelector)
    (java.io File)
@@ -205,13 +204,24 @@
   []
   (.. (get-page) goBack))
 
+(declare -query)
+
 (defn query
   ^SeqableLocator
   [q]
   (if (instance? SeqableLocator q)
     q
-    (let [locator (if (= (type q) LocatorImpl)
+    (let [locator (cond
+                    (instance? com.microsoft.playwright.Locator q)
                     q
+
+                    ;; Subquery - a vector/list starting with a (sequable)locator searches in its subtree(s).
+                    (and (sequential? q)
+                         (or (instance? SeqableLocator (first q))
+                             (instance? com.microsoft.playwright.Locator (first q))))
+                    (.. (-query (first q)) (locator (query->selector (rest q))))
+
+                    :else
                     (.. (get-page) (locator (query->selector q))))]
       (SeqableLocator. locator))))
 
@@ -487,6 +497,12 @@
     (w/keyboard-press "Enter")
     (w/click (s/a (s/attr= :href "/metosin/reitit")))
     (.textContent (w/-query (ws/text "Downloads"))))
+
+  ;; Subqueries
+  (= 4
+     (count (w/query ["#jar-info-bar" "li"]))
+     (count (w/query [(w/query "#jar-info-bar") "li"]))
+     (count (w/query [(first (w/query "#jar-info-bar")) "li"])))
 
   ())
 
