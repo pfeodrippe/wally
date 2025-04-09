@@ -318,6 +318,11 @@
   [q attr-name]
   (.getAttribute (-query q) (name attr-name)))
 
+(defn value
+  "Returns a form field value."
+  [q]
+  (.inputValue (-query q)))
+
 (defn wait-for
   "`state` may be :hidden, :visible, :attached or :detached, defaults to `:visible`.
   `timeout` is in milliseconds, defaults to the page timeout.
