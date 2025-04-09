@@ -341,6 +341,21 @@
               (csk/->SCREAMING_SNAKE_CASE_STRING state)))
       timeout (.setTimeout timeout)))))
 
+(defn wait-for-not-visible
+  "Waits for element to be either not present in DOM or hidden.
+  `timeout` is in milliseconds, defaults to the page timeout.
+
+  See https://playwright.dev/java/docs/api/class-page#page-wait-for-selector
+  for more details.
+
+  On success, returns `true`. Otherwise, throws an error."
+  ([q]
+   (wait-for-not-visible q {}))
+  ([q {:keys [timeout]}]
+   (wait-for q {:state :hidden
+                :timeout timeout})
+   true))
+
 (defn wait-for-response
   "Blocks and returns the response matching `url-pattern`. `triggering-action` is a function performing
   the action triggering the request. This action argument is useful in avoiding race conditions, because
