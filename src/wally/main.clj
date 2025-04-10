@@ -13,8 +13,8 @@
                              BrowserType$LaunchPersistentContextOptions
                              Download Locator$ClickOptions Locator$DblclickOptions
                              Locator$WaitForOptions Page Page$RouteOptions
-                             Page$WaitForSelectorOptions Playwright Response Route)
-   (com.microsoft.playwright.impl LocatorImpl)
+                             Page$WaitForSelectorOptions Playwright Response Route
+                             TimeoutError)
    (com.microsoft.playwright.options WaitForSelectorState SelectOption)
    (garden.selectors CSSSelector)
    (java.io File)
@@ -204,13 +204,24 @@
   []
   (.. (get-page) goBack))
 
+(declare -query)
+
 (defn query
   ^SeqableLocator
   [q]
   (if (instance? SeqableLocator q)
     q
-    (let [locator (if (= (type q) LocatorImpl)
+    (let [locator (cond
+                    (instance? com.microsoft.playwright.Locator q)
                     q
+
+                    ;; Subquery - a vector/list starting with a (sequable)locator searches in its subtree(s).
+                    (and (sequential? q)
+                         (or (instance? SeqableLocator (first q))
+                             (instance? com.microsoft.playwright.Locator (first q))))
+                    (.. (-query (first q)) (locator (query->selector (rest q))))
+
+                    :else
                     (.. (get-page) (locator (query->selector q))))]
       (SeqableLocator. locator))))
 
@@ -312,6 +323,16 @@
   (.. (-query q)
       (setInputFiles (Paths/get (java.net.URI. (str "file://" file-path))))))
 
+(defn attr
+  "Returns an attribute value."
+  [q attr-name]
+  (.getAttribute (-query q) (name attr-name)))
+
+(defn value
+  "Returns a form field value."
+  [q]
+  (.inputValue (-query q)))
+
 (defn wait-for
   "`state` may be :hidden, :visible, :attached or :detached, defaults to `:visible`.
   `timeout` is in milliseconds, defaults to the page timeout.
@@ -329,6 +350,21 @@
              (WaitForSelectorState/valueOf
               (csk/->SCREAMING_SNAKE_CASE_STRING state)))
       timeout (.setTimeout timeout)))))
+
+(defn wait-for-not-visible
+  "Waits for element to be either not present in DOM or hidden.
+  `timeout` is in milliseconds, defaults to the page timeout.
+
+  See https://playwright.dev/java/docs/api/class-page#page-wait-for-selector
+  for more details.
+
+  On success, returns `true`. Otherwise, throws an error."
+  ([q]
+   (wait-for-not-visible q {}))
+  ([q {:keys [timeout]}]
+   (wait-for q {:state :hidden
+                :timeout timeout})
+   true))
 
 (defn wait-for-response
   "Blocks and returns the response matching `url-pattern`. `triggering-action` is a function performing
@@ -350,6 +386,15 @@
                true)))))
       triggering-action)
      @*p)))
+
+(defn wait-for-url
+  "Waits for the main frame to navigate to the given `url`
+  (a string, a regex or a fn).
+
+  On success, returns `true`. Otherwise, throws an error."
+  [url]
+  (.waitForURL (get-page) url)
+  true)
 
 (defmacro with-slow-network
   "Simulate slow network by delaying sending network request(s)
@@ -429,6 +474,35 @@
   [label]
   (.getByLabel (get-page) label))
 
+(defmacro maybe
+  "Returns `nil` in case that Playwright times out when waiting."
+  [& body]
+  `(try
+     ~@body
+     (catch TimeoutError _#)))
+
+(defn eval-js
+  "Runs a JavaScript function in the context of the web page.
+  An optional `arg` (e.g. a primitive, vector, map) can be passed to the function.
+
+  See: https://playwright.dev/java/docs/evaluating"
+  ([^String js] (eval-js js nil))
+  ([^String js arg]
+   (.evaluate (get-page) js arg)))
+
+(defn grant-permissions
+  [& permissions]
+  "Grants specified permissions (keywords or strings) to the browser context.
+
+  See: https://playwright.dev/java/docs/api/class-browsercontext#browser-context-grant-permissions"
+  (.grantPermissions (.context (get-page)) (map name permissions)))
+
+(defn clipboard-text
+  "Returns clipboard contents."
+  []
+  (grant-permissions :clipboard-read)
+  (eval-js "() => navigator.clipboard.readText()"))
+
 (comment
 
   (require '[wally.selectors :as ws])
@@ -445,6 +519,12 @@
     (w/keyboard-press "Enter")
     (w/click (s/a (s/attr= :href "/metosin/reitit")))
     (.textContent (w/-query (ws/text "Downloads"))))
+
+  ;; Subqueries
+  (= 4
+     (count (w/query ["#jar-info-bar" "li"]))
+     (count (w/query [(w/query "#jar-info-bar") "li"]))
+     (count (w/query [(first (w/query "#jar-info-bar")) "li"])))
 
   ())
 
