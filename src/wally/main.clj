@@ -12,10 +12,13 @@
    (com.microsoft.playwright BrowserType BrowserType$LaunchOptions
                              BrowserType$LaunchPersistentContextOptions
                              Download Locator$ClickOptions Locator$DblclickOptions
+                             Page$ScreenshotOptions Locator$ScreenshotOptions
                              Locator$WaitForOptions Page Page$RouteOptions
                              Page$WaitForSelectorOptions Playwright Response Route
                              TimeoutError)
-   (com.microsoft.playwright.options WaitForSelectorState SelectOption)
+   (com.microsoft.playwright.options WaitForSelectorState SelectOption
+                                     ScreenshotAnimations ScreenshotCaret
+                                     ScreenshotScale ScreenshotType)
    (garden.selectors CSSSelector)
    (java.io File)
    (java.nio.file Paths)
@@ -502,6 +505,69 @@
   []
   (grant-permissions :clipboard-read)
   (eval-js "() => navigator.clipboard.readText()"))
+
+(defcommand take-page-screenshot
+  "https://playwright.dev/java/docs/api/class-page#page-screenshot"
+  [page dest-path & {:keys [full-page?
+                            disable-animations?
+                            caret
+                            clip
+                            mask
+                            mask-color
+                            omit-background?
+                            quality
+                            scale
+                            style
+                            timeout
+                            type]}]
+  (.screenshot page
+               (cond-> (-> (Page$ScreenshotOptions.)
+                           (.setPath (Paths/get dest-path (into-array String []))))
+                 full-page?          (.setFullPage true)
+                 disable-animations? (.setAnimations ScreenshotAnimations/DISABLED)
+                 caret               (.setCaret (case caret
+                                                  :hide ScreenshotCaret/HIDE
+                                                  :initial ScreenshotCaret/INITIAL))
+                 clip                (.setClip (double (:x clip))
+                                               (double (:y clip))
+                                               (double (:width clip))
+                                               (double (:height clip)))
+                 mask                (.setMask (if (sequential? mask) mask [mask]))
+                 mask-color          (.setMaskColor mask-color)
+                 omit-background?    (.setOmitBackground true)
+                 quality             (.setQuality quality)
+                 scale               (.setScale (case scale
+                                                  :css ScreenshotScale/CSS
+                                                  :device ScreenshotScale/DEVICE))
+                 style               (.setStyle style)
+                 timeout             (.setTimeout timeout)
+                 type                (.setType (case type
+                                                 :png ScreenshotType/PNG
+                                                 :jpeg ScreenshotType/JPEG)))))
+
+(defcommand take-element-screenshot
+  "https://playwright.dev/java/docs/api/class-locator#locator-screenshot"
+  [query dest-path & {:keys [disable-animations?
+                             caret
+                             mask
+                             mask-color
+                             omit-background?
+                             scale
+                             timeout]}]
+  (-> (-query query)
+      (.screenshot (cond-> (-> (Locator$ScreenshotOptions.)
+                               (.setPath (Paths/get dest-path (into-array String []))))
+                     disable-animations? (.setAnimations ScreenshotAnimations/DISABLED)
+                     caret               (.setCaret (case caret
+                                                      :hide ScreenshotCaret/HIDE
+                                                      :initial ScreenshotCaret/INITIAL))
+                     mask                (.setMask (if (sequential? mask) mask [mask]))
+                     mask-color          (.setMaskColor mask-color)
+                     omit-background?    (.setOmitBackground true)
+                     scale               (.setScale (case scale
+                                                      :css ScreenshotScale/CSS
+                                                      :device ScreenshotScale/DEVICE))
+                     timeout             (.setTimeout timeout)))))
 
 (comment
 
