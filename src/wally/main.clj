@@ -47,8 +47,7 @@
        ;; so we can login to Google (e.g. for QA develop
        ;; admin) only once during days.
        (Paths/get (java.net.URI.
-                   (str "file://"
-                        (.getAbsolutePath user-data-dir))))
+                    (str (.toURI user-data-dir))))
        (-> (BrowserType$LaunchPersistentContextOptions.)
            (.setHeadless headless)
            (.setSlowMo 50)))
