@@ -22,7 +22,7 @@
    (garden.selectors CSSSelector)
    (java.io File)
    (java.nio.file Paths)
-   (java.util.function Predicate)
+   (java.util.function Consumer Predicate)
    (com.microsoft.playwright.assertions PlaywrightAssertions)))
 
 (def ^:private object-mapper
@@ -82,7 +82,8 @@
        (doto page
          (.setDefaultTimeout 10000)
          (#(swap! page->playwright assoc % pw))
-         (.onClose #(swap! page->playwright dissoc %)))))))
+         (.onClose (reify Consumer
+                     (accept [_ p] (swap! page->playwright dissoc p)))))))))
 
 (defonce ^:dynamic ^Page *page*
   (make-page))
